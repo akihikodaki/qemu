@@ -572,14 +572,14 @@ static bool dbus_scanout_map(DBusDisplayListener *ddl)
 #endif /* WIN32 */
 
 #ifdef CONFIG_OPENGL
-static void dbus_scanout_texture(DisplayChangeListener *dcl,
-                                 uint32_t tex_id,
-                                 bool backing_y_0_top,
-                                 uint32_t backing_width,
-                                 uint32_t backing_height,
-                                 uint32_t x, uint32_t y,
-                                 uint32_t w, uint32_t h,
-                                 void *d3d_tex2d)
+static void dbus_scanout_borrowed_texture(DisplayChangeListener *dcl,
+                                          uint32_t tex_id,
+                                          bool backing_y_0_top,
+                                          uint32_t backing_width,
+                                          uint32_t backing_height,
+                                          uint32_t x, uint32_t y,
+                                          uint32_t w, uint32_t h,
+                                          void *d3d_tex2d)
 {
     trace_dbus_scanout_texture(tex_id, backing_y_0_top,
                                backing_width, backing_height, x, y, w, h);
@@ -618,6 +618,19 @@ static void dbus_scanout_texture(DisplayChangeListener *dcl,
         egl_fb_setup_for_tex(&ddl->fb, backing_width, backing_height, tex_id, false);
     }
 #endif
+}
+
+static void dbus_scanout_texture(DisplayChangeListener *dcl,
+                                 uint32_t backing_id,
+                                 DisplayGLTextureBorrower backing_borrow,
+                                 uint32_t x, uint32_t y,
+                                 uint32_t w, uint32_t h)
+{
+    DisplayGLTexture tex = backing_borrow(backing_id);
+
+    dbus_scanout_borrowed_texture(dcl, tex.id, tex.y_0_top,
+                                  tex.width, tex.height,
+                                  x, y, w, h, tex.d3d_tex2d);
 }
 
 #ifdef CONFIG_GBM
@@ -859,8 +872,9 @@ static void dbus_gl_gfx_switch(DisplayChangeListener *dcl,
         int height = surface_height(ddl->ds);
 
         /* TODO: lazy send dmabuf (there are unnecessary sent otherwise) */
-        dbus_scanout_texture(&ddl->dcl, ddl->ds->texture, false,
-                             width, height, 0, 0, width, height, NULL);
+        dbus_scanout_borrowed_texture(&ddl->dcl, ddl->ds->texture, false,
+                                      width, height, 0, 0, width, height,
+                                      NULL);
     }
 }
 #endif

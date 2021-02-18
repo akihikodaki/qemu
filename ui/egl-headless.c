@@ -55,14 +55,11 @@ static void egl_scanout_disable(DisplayChangeListener *dcl)
     egl_fb_destroy(&edpy->blit_fb);
 }
 
-static void egl_scanout_texture(DisplayChangeListener *dcl,
-                                uint32_t backing_id,
-                                bool backing_y_0_top,
-                                uint32_t backing_width,
-                                uint32_t backing_height,
-                                uint32_t x, uint32_t y,
-                                uint32_t w, uint32_t h,
-                                void *d3d_tex2d)
+static void egl_scanout_imported_texture(DisplayChangeListener *dcl,
+                                         uint32_t backing_texture,
+                                         bool backing_y_0_top,
+                                         uint32_t backing_width,
+                                         uint32_t backing_height)
 {
     egl_dpy *edpy = container_of(dcl, egl_dpy, dcl);
 
@@ -70,7 +67,7 @@ static void egl_scanout_texture(DisplayChangeListener *dcl,
 
     /* source framebuffer */
     egl_fb_setup_for_tex(&edpy->guest_fb,
-                         backing_width, backing_height, backing_id, false);
+                         backing_width, backing_height, backing_texture, false);
 
     /* dest framebuffer */
     if (edpy->blit_fb.width  != backing_width ||
@@ -78,6 +75,20 @@ static void egl_scanout_texture(DisplayChangeListener *dcl,
         egl_fb_destroy(&edpy->blit_fb);
         egl_fb_setup_new_tex(&edpy->blit_fb, backing_width, backing_height);
     }
+}
+
+static void egl_scanout_texture(DisplayChangeListener *dcl,
+                                uint32_t backing_id,
+                                DisplayGLTextureBorrower backing_borrow,
+                                uint32_t x, uint32_t y,
+                                uint32_t w, uint32_t h)
+{
+    DisplayGLTexture backing_texture = backing_borrow(backing_id);
+
+    egl_scanout_imported_texture(dcl, backing_texture.id,
+                                 backing_texture.y_0_top,
+                                 backing_texture.width,
+                                 backing_texture.height);
 }
 
 #ifdef CONFIG_GBM
@@ -96,8 +107,7 @@ static void egl_scanout_dmabuf(DisplayChangeListener *dcl,
     width = qemu_dmabuf_get_width(dmabuf);
     height = qemu_dmabuf_get_height(dmabuf);
 
-    egl_scanout_texture(dcl, texture, false, width, height, 0, 0,
-                        width, height, NULL);
+    egl_scanout_imported_texture(dcl, texture, false, width, height);
 }
 
 static void egl_cursor_dmabuf(DisplayChangeListener *dcl,

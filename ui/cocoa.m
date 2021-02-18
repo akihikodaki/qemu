@@ -105,7 +105,7 @@ static QemuCocoaPasteboardTypeOwner *cbowner;
 
 static bool gl_dirty;
 static uint32_t gl_scanout_id;
-static bool gl_scanout_y0_top;
+static DisplayGLTextureBorrower gl_scanout_borrow;
 static QEMUGLContext gl_view_ctx;
 
 #ifdef CONFIG_EGL
@@ -2178,11 +2178,13 @@ static void cocoa_gl_render(void)
 
     glViewport(0, 0, size.width, size.height);
 
-    if (gl_scanout_id) {
+    if (gl_scanout_borrow) {
+        DisplayGLTexture texture = gl_scanout_borrow(gl_scanout_id);
+
         glBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
-        glBindTexture(GL_TEXTURE_2D, gl_scanout_id);
+        glBindTexture(GL_TEXTURE_2D, texture.id);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-        qemu_gl_run_texture_blit(dgc.gls, gl_scanout_y0_top);
+        qemu_gl_run_texture_blit(dgc.gls, texture.y_0_top);
     } else {
         glBindTexture(GL_TEXTURE_2D, surface->texture);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
@@ -2216,21 +2218,18 @@ static void cocoa_gl_refresh(DisplayChangeListener *dcl)
 
 static void cocoa_gl_scanout_disable(DisplayChangeListener *dcl)
 {
-    gl_scanout_id = 0;
+    gl_scanout_borrow = NULL;
     gl_dirty = true;
 }
 
 static void cocoa_gl_scanout_texture(DisplayChangeListener *dcl,
                                      uint32_t backing_id,
-                                     bool backing_y_0_top,
-                                     uint32_t backing_width,
-                                     uint32_t backing_height,
+                                     DisplayGLTextureBorrower backing_borrow,
                                      uint32_t x, uint32_t y,
-                                     uint32_t w, uint32_t h,
-                                     void *d3d_tex2d)
+                                     uint32_t w, uint32_t h)
 {
     gl_scanout_id = backing_id;
-    gl_scanout_y0_top = backing_y_0_top;
+    gl_scanout_borrow = backing_borrow;
     gl_dirty = true;
 }
 

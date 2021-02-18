@@ -961,21 +961,19 @@ static void qemu_spice_gl_scanout_disable(DisplayChangeListener *dcl)
 }
 
 static void qemu_spice_gl_scanout_texture(DisplayChangeListener *dcl,
-                                          uint32_t tex_id,
-                                          bool y_0_top,
-                                          uint32_t backing_width,
-                                          uint32_t backing_height,
+                                          uint32_t backing_id,
+                                          DisplayGLTextureBorrower backing_borrow,
                                           uint32_t x, uint32_t y,
-                                          uint32_t w, uint32_t h,
-                                          void *d3d_tex2d)
+                                          uint32_t w, uint32_t h)
 {
     SimpleSpiceDisplay *ssd = container_of(dcl, SimpleSpiceDisplay, dcl);
     EGLint offset[DMABUF_MAX_PLANES], stride[DMABUF_MAX_PLANES], fourcc = 0;
     int fd[DMABUF_MAX_PLANES], num_planes;
     uint64_t modifier;
+    DisplayGLTexture tex = backing_borrow(backing_id);
 
-    assert(tex_id);
-    if (!egl_dmabuf_export_texture(tex_id, fd, offset, stride, &fourcc,
+    assert(tex.id);
+    if (!egl_dmabuf_export_texture(tex.id, fd, offset, stride, &fourcc,
                                    &num_planes, &modifier)) {
         fprintf(stderr, "%s: failed to export dmabuf for texture\n", __func__);
         return;
@@ -984,9 +982,9 @@ static void qemu_spice_gl_scanout_texture(DisplayChangeListener *dcl,
     trace_qemu_spice_gl_scanout_texture(ssd->qxl.id, w, h, fourcc);
 
     /* note: spice server will close the fd */
-    spice_server_gl_scanout(&ssd->qxl, fd, backing_width, backing_height,
+    spice_server_gl_scanout(&ssd->qxl, fd, tex.width, tex.height,
                             (uint32_t *)offset, (uint32_t *)stride, num_planes,
-                            fourcc, modifier, y_0_top);
+                            fourcc, modifier, tex.y_0_top);
     qemu_spice_gl_monitor_config(ssd, x, y, w, h);
     ssd->have_surface = false;
     ssd->have_scanout = true;

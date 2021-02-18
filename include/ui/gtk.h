@@ -171,12 +171,9 @@ QEMUGLContext gd_egl_create_context(DisplayGLCtx *dgc,
 void gd_egl_scanout_disable(DisplayChangeListener *dcl);
 void gd_egl_scanout_texture(DisplayChangeListener *dcl,
                             uint32_t backing_id,
-                            bool backing_y_0_top,
-                            uint32_t backing_width,
-                            uint32_t backing_height,
+                            DisplayGLTextureBorrower backing_borrow,
                             uint32_t x, uint32_t y,
-                            uint32_t w, uint32_t h,
-                            void *d3d_tex2d);
+                            uint32_t w, uint32_t h);
 void gd_egl_scanout_dmabuf(DisplayChangeListener *dcl,
                            QemuDmaBuf *dmabuf);
 void gd_egl_cursor_dmabuf(DisplayChangeListener *dcl,
@@ -208,12 +205,9 @@ void gd_gl_area_scanout_dmabuf(DisplayChangeListener *dcl,
                                QemuDmaBuf *dmabuf);
 void gd_gl_area_scanout_texture(DisplayChangeListener *dcl,
                                 uint32_t backing_id,
-                                bool backing_y_0_top,
-                                uint32_t backing_width,
-                                uint32_t backing_height,
+                                DisplayGLTextureBorrower backing_borrow,
                                 uint32_t x, uint32_t y,
-                                uint32_t w, uint32_t h,
-                                void *d3d_tex2d);
+                                uint32_t w, uint32_t h);
 void gd_gl_area_scanout_disable(DisplayChangeListener *dcl);
 void gd_gl_area_scanout_flush(DisplayChangeListener *dcl,
                               uint32_t x, uint32_t y, uint32_t w, uint32_t h);

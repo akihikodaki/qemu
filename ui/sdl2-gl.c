@@ -201,27 +201,25 @@ void sdl2_gl_scanout_disable(DisplayChangeListener *dcl)
 
 void sdl2_gl_scanout_texture(DisplayChangeListener *dcl,
                              uint32_t backing_id,
-                             bool backing_y_0_top,
-                             uint32_t backing_width,
-                             uint32_t backing_height,
+                             DisplayGLTextureBorrower backing_borrow,
                              uint32_t x, uint32_t y,
-                             uint32_t w, uint32_t h,
-                             void *d3d_tex2d)
+                             uint32_t w, uint32_t h)
 {
     struct sdl2_console *scon = container_of(dcl, struct sdl2_console, dcl);
+    DisplayGLTexture texture = backing_borrow(backing_id);
 
     assert(scon->opengl);
     scon->x = x;
     scon->y = y;
     scon->w = w;
     scon->h = h;
-    scon->y0_top = backing_y_0_top;
+    scon->y0_top = texture.y_0_top;
 
     SDL_GL_MakeCurrent(scon->real_window, scon->winctx);
 
     sdl2_set_scanout_mode(scon, true);
-    egl_fb_setup_for_tex(&scon->guest_fb, backing_width, backing_height,
-                         backing_id, false);
+    egl_fb_setup_for_tex(&scon->guest_fb, texture.width, texture.height,
+                         texture.id, false);
 }
 
 void sdl2_gl_scanout_flush(DisplayChangeListener *dcl,
