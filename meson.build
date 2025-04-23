@@ -2159,7 +2159,30 @@ if not get_option('libkeyutils').auto() or have_block
                         method: 'pkg-config')
 endif
 
-has_gettid = cc.has_function('gettid')
+osdep_prefix = '''
+  #ifndef _GNU_SOURCE
+  #define _GNU_SOURCE
+  #endif
+
+  #include <stddef.h>
+  #include <sys/types.h>
+  #include <stdlib.h>
+
+  #include <string.h>
+  #include <limits.h>
+  /* Put unistd.h before time.h as that triggers localtime_r/gmtime_r
+   * function availability on recentish Mingw-w64 platforms. */
+  #include <unistd.h>
+  #include <time.h>
+  #include <errno.h>
+  #include <fcntl.h>
+'''
+
+sched_prefix = osdep_prefix + '''
+#include <sched.h>
+'''
+
+has_gettid = cc.has_function('gettid', prefix: osdep_prefix)
 
 # libselinux
 selinux = dependency('libselinux',
@@ -2184,27 +2207,6 @@ if not has_malloc_trim and get_option('malloc_trim').enabled()
     error('malloc_trim not available with non-libc memory allocator')
   endif
 endif
-
-osdep_prefix = '''
-  #ifndef _GNU_SOURCE
-  #define _GNU_SOURCE
-  #endif
-
-  #include <stddef.h>
-  #include <sys/types.h>
-
-  #include <limits.h>
-  /* Put unistd.h before time.h as that triggers localtime_r/gmtime_r
-   * function availability on recentish Mingw-w64 platforms. */
-  #include <unistd.h>
-  #include <time.h>
-  #include <errno.h>
-  #include <fcntl.h>
-'''
-
-sched_prefix = osdep_prefix + '''
-#include <sched.h>
-'''
 
 # Check whether the glibc provides STATX_BASIC_STATS
 
@@ -2644,36 +2646,36 @@ if host_os == 'windows'
 endif
 
 # has_function
-config_host_data.set('CONFIG_CLOSE_RANGE', cc.has_function('close_range'))
+config_host_data.set('CONFIG_CLOSE_RANGE', cc.has_function('close_range', prefix: osdep_prefix))
 config_host_data.set('CONFIG_ACCEPT4', cc.has_function('accept4'))
 config_host_data.set('CONFIG_CLOCK_ADJTIME', cc.has_function('clock_adjtime'))
-config_host_data.set('CONFIG_DUP3', cc.has_function('dup3'))
-config_host_data.set('CONFIG_FALLOCATE', cc.has_function('fallocate'))
-config_host_data.set('CONFIG_POSIX_FALLOCATE', cc.has_function('posix_fallocate'))
+config_host_data.set('CONFIG_DUP3', cc.has_function('dup3', prefix: osdep_prefix))
+config_host_data.set('CONFIG_FALLOCATE', cc.has_function('fallocate', prefix: osdep_prefix))
+config_host_data.set('CONFIG_POSIX_FALLOCATE', cc.has_function('posix_fallocate', prefix: osdep_prefix))
 config_host_data.set('CONFIG_GETCPU', cc.has_function('getcpu', prefix: sched_prefix))
-config_host_data.set('CONFIG_SCHED_GETCPU', cc.has_function('sched_getcpu', prefix: '#include <sched.h>'))
+config_host_data.set('CONFIG_SCHED_GETCPU', cc.has_function('sched_getcpu', prefix: sched_prefix))
 # Note that we need to specify prefix: here to avoid incorrectly
 # thinking that Windows has posix_memalign()
-config_host_data.set('CONFIG_POSIX_MEMALIGN', cc.has_function('posix_memalign', prefix: '#include <stdlib.h>'))
+config_host_data.set('CONFIG_POSIX_MEMALIGN', cc.has_function('posix_memalign', prefix: osdep_prefix))
 config_host_data.set('CONFIG_ALIGNED_MALLOC', cc.has_function('_aligned_malloc'))
-config_host_data.set('CONFIG_VALLOC', cc.has_function('valloc'))
+config_host_data.set('CONFIG_VALLOC', cc.has_function('valloc', prefix: osdep_prefix))
 config_host_data.set('CONFIG_MEMALIGN', cc.has_function('memalign'))
 config_host_data.set('CONFIG_PPOLL', cc.has_function('ppoll'))
 config_host_data.set('CONFIG_PREADV', cc.has_function('preadv', prefix: '#include <sys/uio.h>'))
 config_host_data.set('CONFIG_PTHREAD_FCHDIR_NP', cc.has_function('pthread_fchdir_np'))
 config_host_data.set('CONFIG_SENDFILE', cc.has_function('sendfile'))
 config_host_data.set('CONFIG_SETNS', cc.has_function('setns') and cc.has_function('unshare'))
-config_host_data.set('CONFIG_SYNCFS', cc.has_function('syncfs'))
-config_host_data.set('CONFIG_SYNC_FILE_RANGE', cc.has_function('sync_file_range'))
+config_host_data.set('CONFIG_SYNCFS', cc.has_function('syncfs', prefix: osdep_prefix))
+config_host_data.set('CONFIG_SYNC_FILE_RANGE', cc.has_function('sync_file_range', prefix: osdep_prefix))
 config_host_data.set('CONFIG_TIMERFD', cc.has_function('timerfd_create'))
-config_host_data.set('CONFIG_GETLOADAVG', cc.has_function('getloadavg'))
-config_host_data.set('HAVE_COPY_FILE_RANGE', cc.has_function('copy_file_range'))
+config_host_data.set('CONFIG_GETLOADAVG', cc.has_function('getloadavg', prefix: osdep_prefix))
+config_host_data.set('HAVE_COPY_FILE_RANGE', cc.has_function('copy_file_range', prefix: osdep_prefix))
 config_host_data.set('HAVE_GETIFADDRS', cc.has_function('getifaddrs'))
 config_host_data.set('HAVE_GLIB_WITH_SLICE_ALLOCATOR', glib_has_gslice)
 config_host_data.set('HAVE_GLIB_WITH_ALIGNED_ALLOC', glib_has_aligned_alloc)
 config_host_data.set('HAVE_OPENPTY', cc.has_function('openpty', dependencies: util))
-config_host_data.set('HAVE_STRCHRNUL', cc.has_function('strchrnul'))
-config_host_data.set('HAVE_SYSTEM_FUNCTION', cc.has_function('system', prefix: '#include <stdlib.h>'))
+config_host_data.set('HAVE_STRCHRNUL', cc.has_function('strchrnul', prefix: osdep_prefix))
+config_host_data.set('HAVE_SYSTEM_FUNCTION', cc.has_function('system', prefix: osdep_prefix))
 if rbd.found()
   config_host_data.set('HAVE_RBD_NAMESPACE_EXISTS',
                        cc.has_function('rbd_namespace_exists',
