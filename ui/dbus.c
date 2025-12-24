@@ -63,20 +63,20 @@ dbus_is_compatible_dcl(DisplayGLCtx *dgc,
 static void
 dbus_create_texture(DisplayGLCtx *ctx, DisplaySurface *surface)
 {
-    surface_gl_create_texture(ctx->gls, surface);
+    surface_gl_create_texture(surface);
 }
 
 static void
 dbus_destroy_texture(DisplayGLCtx *ctx, DisplaySurface *surface)
 {
-    surface_gl_destroy_texture(ctx->gls, surface);
+    surface_gl_destroy_texture(surface);
 }
 
 static void
 dbus_update_texture(DisplayGLCtx *ctx, DisplaySurface *surface,
                     int x, int y, int w, int h)
 {
-    surface_gl_update_texture(ctx->gls, surface, x, y, w, h);
+    surface_gl_update_texture(surface, x, y, w, h);
 }
 
 static const DisplayGLCtxOps dbus_gl_ops = {
@@ -119,9 +119,6 @@ dbus_display_init(Object *o)
 
 #ifdef CONFIG_OPENGL
     dd->glctx.ops = &dbus_gl_ops;
-    if (display_opengl) {
-        dd->glctx.gls = qemu_gl_init_shader();
-    }
 #endif
     dd->iface = qemu_dbus_display1_vm_skeleton_new();
     dd->consoles = g_ptr_array_new_with_free_func(g_object_unref);
@@ -159,9 +156,6 @@ dbus_display_finalize(Object *o)
     g_clear_object(&dd->iface);
     g_free(dd->dbus_addr);
     g_free(dd->audiodev);
-#ifdef CONFIG_OPENGL
-    g_clear_pointer(&dd->glctx.gls, qemu_gl_fini_shader);
-#endif
     dbus_display = NULL;
 }
 
