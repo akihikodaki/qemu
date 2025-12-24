@@ -20,7 +20,9 @@
 #include "hw/virtio/virtio-gpu-bswap.h"
 #include "hw/virtio/virtio-gpu-pixman.h"
 
+#ifdef CONFIG_EGL
 #include "ui/egl-helpers.h"
+#endif
 
 #include <virglrenderer.h>
 
@@ -63,7 +65,7 @@ virtio_gpu_virgl_find_resource(VirtIOGPU *g, uint32_t resource_id)
     return container_of(res, struct virtio_gpu_virgl_resource, base);
 }
 
-#if VIRGL_RENDERER_CALLBACKS_VERSION >= 4
+#if VIRGL_RENDERER_CALLBACKS_VERSION >= 4 && defined(CONFIG_EGL)
 static void *
 virgl_get_egl_display(G_GNUC_UNUSED void *cookie)
 {
@@ -583,7 +585,6 @@ static void virgl_cmd_set_scanout(VirtIOGPU *g,
         }
         qemu_console_resize(g->parent_obj.scanout[ss.scanout_id].con,
                             ss.r.width, ss.r.height);
-        virgl_renderer_force_ctx_0();
         qemu_console_gl_scanout_texture(
             g->parent_obj.scanout[ss.scanout_id].con, info.tex_id,
             info.flags & VIRTIO_GPU_RESOURCE_FLAG_Y_0_TOP,
@@ -1220,7 +1221,7 @@ void virtio_gpu_virgl_reset_async_fences(VirtIOGPU *g)
     }
 }
 
-#if VIRGL_CHECK_VERSION(1, 1, 2)
+#if VIRGL_CHECK_VERSION(1, 1, 2) && defined(CONFIG_EGL)
 static void virtio_gpu_virgl_async_fence_bh(void *opaque)
 {
     QSLIST_HEAD(, virtio_gpu_virgl_context_fence) async_fenceq;
@@ -1431,7 +1432,7 @@ static int virtio_gpu_virgl_init(VirtIOGPU *g)
     uint32_t flags = 0;
     VirtIOGPUGL *gl = VIRTIO_GPU_GL(g);
 
-#if VIRGL_RENDERER_CALLBACKS_VERSION >= 4
+#if VIRGL_RENDERER_CALLBACKS_VERSION >= 4 && defined(CONFIG_EGL)
     if (qemu_egl_display) {
         virtio_gpu_3d_cbs.version = 4;
         virtio_gpu_3d_cbs.get_egl_display = virgl_get_egl_display;
@@ -1443,7 +1444,7 @@ static int virtio_gpu_virgl_init(VirtIOGPU *g)
 #endif
     }
 #endif
-#ifdef VIRGL_RENDERER_D3D11_SHARE_TEXTURE
+#if defined(VIRGL_RENDERER_D3D11_SHARE_TEXTURE) && defined(CONFIG_EGL)
     if (qemu_egl_angle_d3d) {
         flags |= VIRGL_RENDERER_D3D11_SHARE_TEXTURE;
     }
@@ -1493,7 +1494,7 @@ static int virtio_gpu_virgl_init(VirtIOGPU *g)
     gl->cmdq_resume_bh = virtio_bh_io_new_guarded(DEVICE(g),
                                                   virtio_gpu_virgl_resume_cmdq_bh,
                                                   g);
-#if VIRGL_CHECK_VERSION(1, 1, 2)
+#if VIRGL_CHECK_VERSION(1, 1, 2) && defined(CONFIG_EGL)
     gl->async_fence_bh = virtio_bh_io_new_guarded(DEVICE(g),
                                                   virtio_gpu_virgl_async_fence_bh,
                                                   g);

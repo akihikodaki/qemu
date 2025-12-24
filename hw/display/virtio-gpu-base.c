@@ -152,6 +152,15 @@ virtio_gpu_gl_block(void *opaque, bool block)
     }
 }
 
+static void
+virtio_gpu_gl_force_ctx(void *opaque)
+{
+    VirtIOGPUBase *g = opaque;
+    VirtIOGPUBaseClass *vgc = VIRTIO_GPU_BASE_GET_CLASS(g);
+
+    vgc->gl_force_ctx();
+}
+
 static int
 virtio_gpu_get_flags(void *opaque)
 {
@@ -176,6 +185,7 @@ static const GraphicHwOps virtio_gpu_ops = {
     .text_update = virtio_gpu_text_update,
     .ui_info = virtio_gpu_ui_info,
     .gl_block = virtio_gpu_gl_block,
+    .gl_force_ctx = virtio_gpu_gl_force_ctx,
 };
 
 bool

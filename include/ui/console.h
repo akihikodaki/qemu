@@ -333,6 +333,7 @@ typedef struct GraphicHwOps {
     void (*text_update)(void *opaque, uint32_t *text);
     void (*ui_info)(void *opaque, uint32_t head, QemuUIInfo *info);
     void (*gl_block)(void *opaque, bool block);
+    void (*gl_force_ctx)(void *opaque);
 } GraphicHwOps;
 
 QemuConsole *qemu_graphic_console_create(DeviceState *dev, uint32_t head,
@@ -380,18 +381,15 @@ void coroutine_fn qemu_console_co_wait_update(QemuConsole *con);
 #ifdef CONFIG_OPENGL
 bool console_gl_check_format(DisplayChangeListener *dcl,
                              pixman_format_code_t format);
-void surface_gl_create_texture(QemuGLShader *gls,
-                               DisplaySurface *surface);
+void surface_gl_create_texture(DisplaySurface *surface);
 bool surface_gl_create_texture_from_fd(DisplaySurface *surface,
                                        int fd, uint32_t *texture,
                                        uint32_t *mem_obj);
-void surface_gl_update_texture(QemuGLShader *gls,
-                               DisplaySurface *surface,
+void surface_gl_update_texture(DisplaySurface *surface,
                                int x, int y, int w, int h);
 void surface_gl_render_texture(QemuGLShader *gls,
                                DisplaySurface *surface);
-void surface_gl_destroy_texture(QemuGLShader *gls,
-                               DisplaySurface *surface);
+void surface_gl_destroy_texture(DisplaySurface *surface);
 void surface_gl_setup_viewport(QemuGLShader *gls,
                                DisplaySurface *surface,
                                int ww, int wh);

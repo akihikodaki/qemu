@@ -64,13 +64,11 @@ bool console_gl_check_format(DisplayChangeListener *dcl,
     return map_format(format, &glformat, &gltype);
 }
 
-void surface_gl_create_texture(QemuGLShader *gls,
-                               DisplaySurface *surface)
+void surface_gl_create_texture(DisplaySurface *surface)
 {
     GLenum glformat;
     GLenum gltype;
 
-    assert(gls);
     assert(QEMU_IS_ALIGNED(surface_stride(surface), surface_bytes_per_pixel(surface)));
 
     if (surface->texture) {
@@ -145,15 +143,13 @@ cleanup_mem:
     return false;
 }
 
-void surface_gl_update_texture(QemuGLShader *gls,
-                               DisplaySurface *surface,
+void surface_gl_update_texture(DisplaySurface *surface,
                                int x, int y, int w, int h)
 {
     uint8_t *data = (void *)surface_data(surface);
     GLenum glformat;
     GLenum gltype;
 
-    assert(gls);
     assert(map_format(surface_format(surface), &glformat, &gltype));
 
     if (surface->texture) {
@@ -178,8 +174,7 @@ void surface_gl_render_texture(QemuGLShader *gls,
     qemu_gl_run_texture_blit(gls, false);
 }
 
-void surface_gl_destroy_texture(QemuGLShader *gls,
-                                DisplaySurface *surface)
+void surface_gl_destroy_texture(DisplaySurface *surface)
 {
     if (!surface || !surface->texture) {
         return;

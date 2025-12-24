@@ -298,6 +298,7 @@ static void displaychangelistener_display_console(DisplayChangeListener *dcl,
         dcl->ops->dpy_gl_scanout_dmabuf(dcl, con->scanout.dmabuf);
     } else if (con->scanout.kind == SCANOUT_TEXTURE &&
                dcl->ops->dpy_gl_scanout_texture) {
+        con->hw_ops->gl_force_ctx(con->hw);
         dcl->ops->dpy_gl_scanout_texture(dcl,
                                          con->scanout.texture.backing_id,
                                          con->scanout.texture.backing_y_0_top,
@@ -975,6 +976,7 @@ void qemu_console_gl_scanout_texture(QemuConsole *con,
             continue;
         }
         if (dcl->ops->dpy_gl_scanout_texture) {
+            con->hw_ops->gl_force_ctx(con->hw);
             dcl->ops->dpy_gl_scanout_texture(dcl, backing_id,
                                              backing_y_0_top,
                                              backing_width, backing_height,

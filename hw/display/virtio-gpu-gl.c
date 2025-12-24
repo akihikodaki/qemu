@@ -217,6 +217,7 @@ static void virtio_gpu_gl_class_init(ObjectClass *klass, const void *data)
     VirtIOGPUClass *vgc = VIRTIO_GPU_CLASS(klass);
 
     vbc->gl_flushed = virtio_gpu_gl_flushed;
+    vbc->gl_force_ctx = virgl_renderer_force_ctx_0;
     vgc->handle_ctrl = virtio_gpu_gl_handle_ctrl;
     vgc->process_cmd = virtio_gpu_virgl_process_cmd;
     vgc->update_cursor_data = virtio_gpu_gl_update_cursor_data;

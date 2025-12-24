@@ -59,7 +59,9 @@ void egl_dmabuf_create_fence(QemuDmaBuf *dmabuf);
 
 #endif
 
-EGLSurface qemu_egl_init_surface_x11(EGLContext ectx, EGLNativeWindowType win);
+EGLSurface qemu_egl_init_surface(EGLContext ectx, EGLNativeWindowType win);
+
+int qemu_egl_init_dpy_metal(DisplayGLMode mode, uint64_t id);
 
 #if defined(CONFIG_X11) || defined(CONFIG_GBM) || defined(WIN32)
 EGLDisplay qemu_egl_get_display(EGLNativeDisplayType native,
