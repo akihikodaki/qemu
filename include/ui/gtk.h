@@ -21,7 +21,7 @@
 #include "ui/clipboard.h"
 #include "ui/console.h"
 #include "ui/kbd-state.h"
-#if defined(CONFIG_OPENGL)
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 #include "ui/egl-helpers.h"
 #include "ui/egl-context.h"
 #endif
@@ -44,7 +44,7 @@ typedef struct VirtualGfxConsole {
     double preferred_scale;
     double scale_x;
     double scale_y;
-#if defined(CONFIG_OPENGL)
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
     QemuGLShader *gls;
     EGLContext ectx;
     EGLSurface esurface;
