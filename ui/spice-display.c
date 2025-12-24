@@ -876,7 +876,7 @@ static void spice_gl_update(DisplayChangeListener *dcl,
 {
     SimpleSpiceDisplay *ssd = container_of(dcl, SimpleSpiceDisplay, dcl);
 
-    surface_gl_update_texture(ssd->gls, ssd->ds, x, y, w, h);
+    surface_gl_update_texture(ssd->ds, x, y, w, h);
     ssd->gl_updates++;
 }
 
@@ -944,11 +944,11 @@ static bool spice_gl_replace_fd_texture(SimpleSpiceDisplay *ssd,
                                         num_planes,
                                         modifier);
         if (!ret) {
-            surface_gl_destroy_texture(ssd->gls, ssd->ds);
+            surface_gl_destroy_texture(ssd->ds);
             warn_report("spice: no texture available to display");
         }
     } else {
-        surface_gl_destroy_texture(ssd->gls, ssd->ds);
+        surface_gl_destroy_texture(ssd->ds);
         ssd->ds->texture = texture;
 
 #ifdef GL_EXT_memory_object_fd
@@ -991,7 +991,7 @@ static void spice_gl_switch(DisplayChangeListener *dcl,
     bool ret;
 
     if (ssd->ds) {
-        surface_gl_destroy_texture(ssd->gls, ssd->ds);
+        surface_gl_destroy_texture(ssd->ds);
     }
     ssd->ds = new_surface;
     if (ssd->ds) {
@@ -999,7 +999,7 @@ static void spice_gl_switch(DisplayChangeListener *dcl,
         int fd[DMABUF_MAX_PLANES], num_planes, fourcc;
         uint64_t modifier;
 
-        surface_gl_create_texture(ssd->gls, ssd->ds);
+        surface_gl_create_texture(ssd->ds);
         if (!egl_dmabuf_export_texture(ssd->ds->texture,
                                        fd,
                                        (EGLint *)offset,
@@ -1007,13 +1007,13 @@ static void spice_gl_switch(DisplayChangeListener *dcl,
                                        &fourcc,
                                        &num_planes,
                                        &modifier)) {
-            surface_gl_destroy_texture(ssd->gls, ssd->ds);
+            surface_gl_destroy_texture(ssd->ds);
             return;
         }
 
         ret = spice_gl_replace_fd_texture(ssd, fd, &modifier, &num_planes);
         if (!ret) {
-            surface_gl_destroy_texture(ssd->gls, ssd->ds);
+            surface_gl_destroy_texture(ssd->ds);
             return;
         }
 
