@@ -35,7 +35,7 @@
 #include <dxgi1_2.h>
 #endif
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 #include "ui/shader.h"
 #include "ui/egl-helpers.h"
 #include "ui/egl-context.h"
@@ -80,7 +80,7 @@ struct _DBusDisplayListener {
     QemuDBusDisplay1ListenerWin32D3d11 *d3d11_proxy;
     HANDLE peer_process;
     ID3D11Texture2D *d3d_texture;
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
     egl_fb fb;
 #endif
 #else /* !WIN32 */
@@ -114,7 +114,7 @@ static void ddl_discard_cursor_messages(DBusDisplayListener *ddl)
     g_atomic_int_set(&ddl->cursor_serial_to_discard, serial);
 }
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 static void dbus_scanout_disable(DisplayChangeListener *dcl)
 {
     DBusDisplayListener *ddl = container_of(dcl, DBusDisplayListener, dcl);
@@ -412,7 +412,7 @@ static void dbus_scanout_dmabuf(DisplayChangeListener *dcl,
     }
 }
 #endif /* GBM */
-#endif /* OPENGL */
+#endif /* defined(CONFIG_OPENGL) && defined(CONFIG_EGL) */
 
 #ifdef WIN32
 static bool dbus_scanout_map(DBusDisplayListener *ddl)
@@ -467,7 +467,7 @@ static bool dbus_scanout_map(DBusDisplayListener *ddl)
     return true;
 }
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 static bool
 dbus_scanout_share_d3d_texture(
     DBusDisplayListener *ddl,
@@ -531,7 +531,7 @@ dbus_scanout_share_d3d_texture(
 
     return true;
 }
-#endif /* CONFIG_OPENGL */
+#endif /* defined(CONFIG_OPENGL) && defined(CONFIG_EGL) */
 #else /* !WIN32 */
 static bool dbus_scanout_map(DBusDisplayListener *ddl)
 {
@@ -579,7 +579,7 @@ static bool dbus_scanout_map(DBusDisplayListener *ddl)
 }
 #endif /* WIN32 */
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 static void dbus_scanout_texture(DisplayChangeListener *dcl,
                                  uint32_t tex_id,
                                  bool backing_y_0_top,
@@ -736,14 +736,14 @@ static void dbus_gl_refresh(DisplayChangeListener *dcl)
     }
 #endif
 }
-#endif /* OPENGL */
+#endif /* defined(OPENGL) && defined(EGL) */
 
 static void dbus_refresh(DisplayChangeListener *dcl)
 {
     graphic_hw_update(dcl->con);
 }
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 static void dbus_gl_gfx_update(DisplayChangeListener *dcl,
                                int x, int y, int w, int h)
 {
@@ -852,7 +852,7 @@ static void dbus_gfx_update(DisplayChangeListener *dcl,
     dbus_gfx_update_sub(ddl, x, y, w, h);
 }
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 static void dbus_gl_gfx_switch(DisplayChangeListener *dcl,
                                struct DisplaySurface *new_surface)
 {
@@ -921,7 +921,7 @@ static void dbus_cursor_define(DisplayChangeListener *dcl,
         NULL);
 }
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 const DisplayChangeListenerOps dbus_gl_dcl_ops = {
     .dpy_name                = "dbus-gl",
     .dpy_gfx_update          = dbus_gl_gfx_update,
@@ -965,7 +965,7 @@ dbus_display_listener_dispose(GObject *object)
 #ifdef WIN32
     g_clear_object(&ddl->d3d11_proxy);
     g_clear_pointer(&ddl->peer_process, CloseHandle);
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
     egl_fb_destroy(&ddl->fb);
 #endif
 #else /* !WIN32 */
@@ -984,7 +984,7 @@ dbus_display_listener_constructed(GObject *object)
     DBusDisplayListener *ddl = DBUS_DISPLAY_LISTENER(object);
 
     ddl->dcl.ops = &dbus_dcl_ops;
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
     if (display_opengl) {
         ddl->dcl.ops = &dbus_gl_dcl_ops;
     }
