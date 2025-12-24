@@ -159,7 +159,7 @@ static void egl_scanout_flush(DisplayChangeListener *dcl,
                           1.0, 1.0);
     } else {
         /* no cursor -> use simple framebuffer blit */
-        egl_fb_blit(&edpy->blit_fb, &edpy->guest_fb, edpy->y_0_top);
+        egl_fb_blit(&edpy->blit_fb, &edpy->guest_fb, edpy->y_0_top, GL_LINEAR);
     }
 
     egl_fb_read(edpy->ds, &edpy->blit_fb);
