@@ -2241,11 +2241,11 @@ DEF("display", HAS_ARG, QEMU_OPTION_display,
     "-display curses[,charset=<encoding>]\n"
 #endif
 #if defined(CONFIG_COCOA)
-    "-display cocoa[,full-grab=on|off][,swap-opt-cmd=on|off]\n"
+    "-display cocoa[,full-grab=on|off][,gl=on|core|es|off][,swap-opt-cmd=on|off]\n"
     "              [,show-cursor=on|off][,left-command-key=on|off]\n"
     "              [,full-screen=on|off][,zoom-to-fit=on|off]\n"
 #endif
-#if defined(CONFIG_OPENGL)
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
     "-display egl-headless[,rendernode=<file>]\n"
 #endif
 #if defined(CONFIG_DBUS_DISPLAY)
@@ -2359,6 +2359,8 @@ SRST
                                performs a global grab on key events.
                                (default: off) See
                                https://support.apple.com/en-in/guide/mac-help/mh32356/mac
+
+        ``gl=on|core|es|off`` : Use OpenGL for displaying
 
         ``swap-opt-cmd=on|off`` : Swap the Option and Command keys so that their
                                   key codes match their position on non-Mac

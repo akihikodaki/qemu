@@ -29,8 +29,8 @@ static void gtk_gl_area_set_scanout_mode(VirtualConsole *vc, bool scanout)
         gtk_gl_area_make_current(GTK_GL_AREA(vc->gfx.drawing_area));
         egl_fb_destroy(&vc->gfx.guest_fb);
         if (vc->gfx.surface) {
-            surface_gl_destroy_texture(vc->gfx.gls, vc->gfx.ds);
-            surface_gl_create_texture(vc->gfx.gls, vc->gfx.ds);
+            surface_gl_destroy_texture(vc->gfx.ds);
+            surface_gl_create_texture(vc->gfx.ds);
         }
     }
 }
@@ -147,12 +147,12 @@ void gd_gl_area_update(DisplayChangeListener *dcl,
 {
     VirtualConsole *vc = container_of(dcl, VirtualConsole, gfx.dcl);
 
-    if (!vc->gfx.gls || !vc->gfx.ds) {
+    if (!vc->gfx.ds) {
         return;
     }
 
     gtk_gl_area_make_current(GTK_GL_AREA(vc->gfx.drawing_area));
-    surface_gl_update_texture(vc->gfx.gls, vc->gfx.ds, x, y, w, h);
+    surface_gl_update_texture(vc->gfx.ds, x, y, w, h);
     vc->gfx.glupdates++;
     gdk_gl_context_clear_current();
 }
@@ -191,7 +191,7 @@ void gd_gl_area_refresh(DisplayChangeListener *dcl)
         gtk_gl_area_make_current(GTK_GL_AREA(vc->gfx.drawing_area));
         vc->gfx.gls = qemu_gl_init_shader();
         if (vc->gfx.ds) {
-            surface_gl_create_texture(vc->gfx.gls, vc->gfx.ds);
+            surface_gl_create_texture(vc->gfx.ds);
         }
     }
 
@@ -219,8 +219,8 @@ void gd_gl_area_switch(DisplayChangeListener *dcl,
 
     if (vc->gfx.gls) {
         gtk_gl_area_make_current(GTK_GL_AREA(vc->gfx.drawing_area));
-        surface_gl_destroy_texture(vc->gfx.gls, vc->gfx.ds);
-        surface_gl_create_texture(vc->gfx.gls, surface);
+        surface_gl_destroy_texture(vc->gfx.ds);
+        surface_gl_create_texture(surface);
     }
     vc->gfx.ds = surface;
 

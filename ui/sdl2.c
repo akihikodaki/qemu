@@ -97,7 +97,7 @@ void sdl2_window_create(struct sdl2_console *scon)
     if (scon->hidden) {
         flags |= SDL_WINDOW_HIDDEN;
     }
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
     if (scon->opengl) {
         flags |= SDL_WINDOW_OPENGL;
     }
@@ -123,7 +123,7 @@ void sdl2_window_create(struct sdl2_console *scon)
         scon->winctx = SDL_GL_CreateContext(scon->real_window);
         SDL_GL_SetSwapInterval(0);
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
         qemu_egl_display = eglGetCurrentDisplay();
 #endif
     } else {
@@ -166,7 +166,7 @@ void sdl2_window_resize(struct sdl2_console *scon)
 static void sdl2_redraw(struct sdl2_console *scon)
 {
     if (scon->opengl) {
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
         sdl2_gl_redraw(scon);
 #endif
     } else {
@@ -822,7 +822,7 @@ static const DisplayChangeListenerOps dcl_2d_ops = {
     .dpy_cursor_define    = sdl_mouse_define,
 };
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 static const DisplayChangeListenerOps dcl_gl_ops = {
     .dpy_name                = "sdl2-gl",
     .dpy_gfx_update          = sdl2_gl_update,
@@ -862,7 +862,7 @@ static void sdl2_display_early_init(DisplayOptions *o)
 {
     assert(o->type == DISPLAY_TYPE_SDL);
     if (o->has_gl && o->gl) {
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
         display_opengl = 1;
 #endif
     }
@@ -871,7 +871,7 @@ static void sdl2_display_early_init(DisplayOptions *o)
 static void sdl2_set_hint_x11_force_egl(void)
 {
 #if defined(SDL_HINT_VIDEO_X11_FORCE_EGL) && defined(CONFIG_OPENGL) && \
-    defined(CONFIG_X11)
+    defined(CONFIG_EGL) && defined(CONFIG_X11)
     Display *x_disp = XOpenDisplay(NULL);
     EGLDisplay egl_display;
 
@@ -961,7 +961,7 @@ static void sdl2_display_init(DisplayState *ds, DisplayOptions *o)
         }
         sdl2_console[i].idx = i;
         sdl2_console[i].opts = o;
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
         sdl2_console[i].opengl = display_opengl;
         sdl2_console[i].dgc.ops = display_opengl ? &gl_ctx_ops : NULL;
         ops = display_opengl ? &dcl_gl_ops : &dcl_2d_ops;
@@ -969,7 +969,7 @@ static void sdl2_display_init(DisplayState *ds, DisplayOptions *o)
         sdl2_console[i].opengl = 0;
 #endif
         sdl2_console[i].kbd = qkbd_state_init(con);
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
         if (display_opengl) {
             qemu_console_set_display_gl_ctx(con, &sdl2_console[i].dgc);
             sdl2_gl_console_init(&sdl2_console[i]);
@@ -1032,6 +1032,6 @@ static void register_sdl1(void)
 
 type_init(register_sdl1);
 
-#ifdef CONFIG_OPENGL
+#if defined(CONFIG_OPENGL) && defined(CONFIG_EGL)
 module_dep("ui-opengl");
 #endif
