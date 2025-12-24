@@ -40,8 +40,8 @@ static void sdl2_set_scanout_mode(struct sdl2_console *scon, bool scanout)
     if (!scon->scanout_mode) {
         egl_fb_destroy(&scon->guest_fb);
         if (scon->surface) {
-            surface_gl_destroy_texture(scon->gls, scon->surface);
-            surface_gl_create_texture(scon->gls, scon->surface);
+            surface_gl_destroy_texture(scon->surface);
+            surface_gl_create_texture(scon->surface);
         }
     }
 }
@@ -72,7 +72,7 @@ void sdl2_gl_update(DisplayChangeListener *dcl,
     }
 
     SDL_GL_MakeCurrent(scon->real_window, scon->winctx);
-    surface_gl_update_texture(scon->gls, scon->surface, x, y, w, h);
+    surface_gl_update_texture(scon->surface, x, y, w, h);
     scon->updates++;
 }
 
@@ -85,7 +85,7 @@ void sdl2_gl_switch(DisplayChangeListener *dcl,
     assert(scon->opengl);
 
     SDL_GL_MakeCurrent(scon->real_window, scon->winctx);
-    surface_gl_destroy_texture(scon->gls, scon->surface);
+    surface_gl_destroy_texture(scon->surface);
 
     scon->surface = new_surface;
 
@@ -105,7 +105,7 @@ void sdl2_gl_switch(DisplayChangeListener *dcl,
         sdl2_window_resize(scon);
     }
 
-    surface_gl_create_texture(scon->gls, scon->surface);
+    surface_gl_create_texture(scon->surface);
 }
 
 void sdl2_gl_refresh(DisplayChangeListener *dcl)
