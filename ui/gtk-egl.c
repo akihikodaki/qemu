@@ -36,8 +36,8 @@ static void gtk_egl_set_scanout_mode(VirtualConsole *vc, bool scanout)
                        vc->gfx.esurface, vc->gfx.ectx);
         egl_fb_destroy(&vc->gfx.guest_fb);
         if (vc->gfx.surface) {
-            surface_gl_destroy_texture(vc->gfx.gls, vc->gfx.ds);
-            surface_gl_create_texture(vc->gfx.gls, vc->gfx.ds);
+            surface_gl_destroy_texture(vc->gfx.ds);
+            surface_gl_create_texture(vc->gfx.ds);
         }
     }
 }
@@ -57,7 +57,7 @@ void gd_egl_init(VirtualConsole *vc)
     }
 
     vc->gfx.ectx = qemu_egl_init_ctx();
-    vc->gfx.esurface = qemu_egl_init_surface_x11
+    vc->gfx.esurface = qemu_egl_init_surface
         (vc->gfx.ectx, (EGLNativeWindowType)x11_window);
 
     assert(vc->gfx.esurface);
@@ -133,13 +133,13 @@ void gd_egl_update(DisplayChangeListener *dcl,
 {
     VirtualConsole *vc = container_of(dcl, VirtualConsole, gfx.dcl);
 
-    if (!vc->gfx.gls || !vc->gfx.ds) {
+    if (!vc->gfx.ds) {
         return;
     }
 
     eglMakeCurrent(qemu_egl_display, vc->gfx.esurface,
                    vc->gfx.esurface, vc->gfx.ectx);
-    surface_gl_update_texture(vc->gfx.gls, vc->gfx.ds, x, y, w, h);
+    surface_gl_update_texture(vc->gfx.ds, x, y, w, h);
     vc->gfx.glupdates++;
     eglMakeCurrent(qemu_egl_display, EGL_NO_SURFACE,
                    EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -165,8 +165,8 @@ void gd_egl_refresh(DisplayChangeListener *dcl)
         }
         vc->gfx.gls = qemu_gl_init_shader();
         if (vc->gfx.ds) {
-            surface_gl_destroy_texture(vc->gfx.gls, vc->gfx.ds);
-            surface_gl_create_texture(vc->gfx.gls, vc->gfx.ds);
+            surface_gl_destroy_texture(vc->gfx.ds);
+            surface_gl_create_texture(vc->gfx.ds);
         }
 #ifdef CONFIG_GBM
         if (vc->gfx.guest_fb.dmabuf) {
@@ -201,10 +201,10 @@ void gd_egl_switch(DisplayChangeListener *dcl,
     eglMakeCurrent(qemu_egl_display, vc->gfx.esurface,
                    vc->gfx.esurface, vc->gfx.ectx);
 
-    surface_gl_destroy_texture(vc->gfx.gls, vc->gfx.ds);
+    surface_gl_destroy_texture(vc->gfx.ds);
     vc->gfx.ds = surface;
     if (vc->gfx.gls) {
-        surface_gl_create_texture(vc->gfx.gls, vc->gfx.ds);
+        surface_gl_create_texture(vc->gfx.ds);
     }
 
     if (resized) {
