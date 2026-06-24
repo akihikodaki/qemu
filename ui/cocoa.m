@@ -210,6 +210,7 @@ static void handleAnyDeviceErrors(Error * err)
 @end
 
 QemuCocoaView *cocoaView;
+NSWindow *cocoaWindow;
 
 static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEventRef cgEvent, void *userInfo)
 {
@@ -397,56 +398,49 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
     CGContextSetShouldAntialias (viewContextRef, NO);
 
     // draw screen bitmap directly to Core Graphics context
-    if (!pixman_image) {
-        // Draw request before any guest device has set up a framebuffer:
-        // just draw an opaque black rectangle
-        CGContextSetRGBFillColor(viewContextRef, 0, 0, 0, 1.0);
-        CGContextFillRect(viewContextRef, NSRectToCGRect(rect));
-    } else {
-        int w = pixman_image_get_width(pixman_image);
-        int h = pixman_image_get_height(pixman_image);
-        int bitsPerPixel = PIXMAN_FORMAT_BPP(pixman_image_get_format(pixman_image));
-        int stride = pixman_image_get_stride(pixman_image);
-        CGDataProviderRef dataProviderRef = CGDataProviderCreateWithData(
-            NULL,
-            pixman_image_get_data(pixman_image),
-            stride * h,
-            NULL
-        );
-        CGImageRef imageRef = CGImageCreate(
-            w, //width
-            h, //height
-            DIV_ROUND_UP(bitsPerPixel, 8) * 2, //bitsPerComponent
-            bitsPerPixel, //bitsPerPixel
-            stride, //bytesPerRow
-            colorspace, //colorspace
-            kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipFirst, //bitmapInfo
-            dataProviderRef, //provider
-            NULL, //decode
-            0, //interpolate
-            kCGRenderingIntentDefault //intent
-        );
-        // selective drawing code (draws only dirty rectangles) (OS X >= 10.4)
-        const NSRect *rectList;
-        NSInteger rectCount;
-        int i;
-        CGImageRef clipImageRef;
-        CGRect clipRect;
+    int w = pixman_image_get_width(pixman_image);
+    int h = pixman_image_get_height(pixman_image);
+    int bitsPerPixel = PIXMAN_FORMAT_BPP(pixman_image_get_format(pixman_image));
+    int stride = pixman_image_get_stride(pixman_image);
+    CGDataProviderRef dataProviderRef = CGDataProviderCreateWithData(
+        NULL,
+        pixman_image_get_data(pixman_image),
+        stride * h,
+        NULL
+    );
+    CGImageRef imageRef = CGImageCreate(
+        w, //width
+        h, //height
+        DIV_ROUND_UP(bitsPerPixel, 8) * 2, //bitsPerComponent
+        bitsPerPixel, //bitsPerPixel
+        stride, //bytesPerRow
+        colorspace, //colorspace
+        kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipFirst, //bitmapInfo
+        dataProviderRef, //provider
+        NULL, //decode
+        0, //interpolate
+        kCGRenderingIntentDefault //intent
+    );
+    // selective drawing code (draws only dirty rectangles) (OS X >= 10.4)
+    const NSRect *rectList;
+    NSInteger rectCount;
+    int i;
+    CGImageRef clipImageRef;
+    CGRect clipRect;
 
-        [self getRectsBeingDrawn:&rectList count:&rectCount];
-        for (i = 0; i < rectCount; i++) {
-            clipRect = rectList[i];
-            clipRect.origin.y = (float)h - (clipRect.origin.y + clipRect.size.height);
-            clipImageRef = CGImageCreateWithImageInRect(
-                                                        imageRef,
-                                                        clipRect
-                                                        );
-            CGContextDrawImage (viewContextRef, cgrect(rectList[i]), clipImageRef);
-            CGImageRelease (clipImageRef);
-        }
-        CGImageRelease (imageRef);
-        CGDataProviderRelease(dataProviderRef);
+    [self getRectsBeingDrawn:&rectList count:&rectCount];
+    for (i = 0; i < rectCount; i++) {
+        clipRect = rectList[i];
+        clipRect.origin.y = (float)h - (clipRect.origin.y + clipRect.size.height);
+        clipImageRef = CGImageCreateWithImageInRect(
+                                                    imageRef,
+                                                    clipRect
+                                                    );
+        CGContextDrawImage (viewContextRef, cgrect(rectList[i]), clipImageRef);
+        CGImageRelease (clipImageRef);
     }
+    CGImageRelease (imageRef);
+    CGDataProviderRelease(dataProviderRef);
 }
 
 - (NSSize)fixAspectRatio:(NSSize)max
@@ -1156,8 +1150,6 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 @implementation QemuCocoaAppController
 - (id) init
 {
-    NSWindow *window;
-
     COCOA_DEBUG("QemuCocoaAppController: init\n");
 
     self = [super init];
@@ -1171,20 +1163,17 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
         }
 
         // create a window
-        window = [[NSWindow alloc] initWithContentRect:[cocoaView frame]
+        cocoaWindow = [[NSWindow alloc] initWithContentRect:[cocoaView frame]
             styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskMiniaturizable|NSWindowStyleMaskClosable
             backing:NSBackingStoreBuffered defer:NO];
-        if(!window) {
+        if(!cocoaWindow) {
             error_report("(cocoa) can't create window");
             exit(1);
         }
-        [window setAcceptsMouseMovedEvents:YES];
-        [window setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
-        [window setTitle:qemu_name ? [NSString stringWithFormat:@"QEMU %s", qemu_name] : @"QEMU"];
-        [window setContentView:cocoaView];
-        [window makeKeyAndOrderFront:self];
-        [window center];
-        [window setDelegate: self];
+        [cocoaWindow setAcceptsMouseMovedEvents:YES];
+        [cocoaWindow setCollectionBehavior:NSWindowCollectionBehaviorFullScreenPrimary];
+        [cocoaWindow setTitle:qemu_name ? [NSString stringWithFormat:@"QEMU %s", qemu_name] : @"QEMU"];
+        [cocoaWindow setDelegate: self];
 
         /* Used for displaying pause on the screen */
         pauseLabel = [NSTextField new];
@@ -1307,7 +1296,7 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
  */
 - (void) doToggleFullScreen:(id)sender
 {
-    [[cocoaView window] toggleFullScreen:sender];
+    [cocoaWindow toggleFullScreen:sender];
 }
 
 - (void) setFullGrab:(id)sender
@@ -1354,9 +1343,9 @@ static CGEventRef handleTapEvent(CGEventTapProxy proxy, CGEventType type, CGEven
 /* Stretches video to fit host monitor size */
 - (void)zoomToFit:(id) sender
 {
-    NSWindowStyleMask styleMask = [[cocoaView window] styleMask] ^ NSWindowStyleMaskResizable;
+    NSWindowStyleMask styleMask = [cocoaWindow styleMask] ^ NSWindowStyleMaskResizable;
 
-    [[cocoaView window] setStyleMask:styleMask];
+    [cocoaWindow setStyleMask:styleMask];
     [sender setState:styleMask & NSWindowStyleMaskResizable ? NSControlStateValueOn : NSControlStateValueOff];
     [cocoaView resizeWindow];
 }
@@ -1634,7 +1623,7 @@ static void create_initial_menus(void)
     menu = [[NSMenu alloc] initWithTitle:@"View"];
     [menu addItem: [[[NSMenuItem alloc] initWithTitle:@"Enter Fullscreen" action:@selector(doToggleFullScreen:) keyEquivalent:@"f"] autorelease]]; // Fullscreen
     menuItem = [[[NSMenuItem alloc] initWithTitle:@"Zoom To Fit" action:@selector(zoomToFit:) keyEquivalent:@""] autorelease];
-    [menuItem setState: [[cocoaView window] styleMask] & NSWindowStyleMaskResizable ? NSControlStateValueOn : NSControlStateValueOff];
+    [menuItem setState: [cocoaWindow styleMask] & NSWindowStyleMaskResizable ? NSControlStateValueOn : NSControlStateValueOff];
     [menu addItem: menuItem];
     menuItem = [[[NSMenuItem alloc] initWithTitle:@"Zoom Interpolation" action:@selector(toggleZoomInterpolation:) keyEquivalent:@""] autorelease];
     [menuItem setState: zoom_interpolation == kCGInterpolationLow ? NSControlStateValueOn : NSControlStateValueOff];
@@ -1980,7 +1969,7 @@ static void cocoa_display_init(DisplayState *ds, DisplayOptions *opts)
 
     /* if fullscreen mode is to be used */
     if (opts->has_full_screen && opts->full_screen) {
-        [[cocoaView window] toggleFullScreen: nil];
+        [cocoaWindow toggleFullScreen: nil];
     }
     if (opts->u.cocoa.has_full_grab && opts->u.cocoa.full_grab) {
         [controller setFullGrab: nil];
@@ -1998,7 +1987,7 @@ static void cocoa_display_init(DisplayState *ds, DisplayOptions *opts)
     }
 
     if (opts->u.cocoa.has_zoom_to_fit && opts->u.cocoa.zoom_to_fit) {
-        [cocoaView window].styleMask |= NSWindowStyleMaskResizable;
+        cocoaWindow.styleMask |= NSWindowStyleMaskResizable;
     }
 
     if (opts->u.cocoa.has_zoom_interpolation && opts->u.cocoa.zoom_interpolation) {
@@ -2026,6 +2015,17 @@ static void cocoa_display_init(DisplayState *ds, DisplayOptions *opts)
     qemu_event_init(&cbevent, false);
     cbowner = [[QemuCocoaPasteboardTypeOwner alloc] init];
     qemu_clipboard_peer_register(&cbpeer);
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [cocoaWindow setContentView:cocoaView];
+        [cocoaWindow makeKeyAndOrderFront:nil];
+        [cocoaWindow center];
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_14_0
+        [NSApp activate];
+#else
+        [NSApp activateIgnoringOtherApps:FALSE];
+#endif
+    });
 
     [pool release];
 
